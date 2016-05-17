@@ -431,6 +431,19 @@ $queries = array(
 				group by job_id
 			having count(DISTINCT t.vaxCat) > 1"
 	),
+	__LINE__ => array( 
+		'name' => 'Nurses - with Inventory',  
+		'query' =>	
+			'SELECT 
+				name, 
+				surname, 
+				(select quantity from nurse_inventory where user.id_number=user_id and vaccineType="QIV") as Quadravalent,
+				(select quantity from nurse_inventory where user.id_number=user_id and vaccineType="TIV") as Trivalent,
+				(select updated from nurse_inventory where user.id_number=user_id and vaccineType="QIV") as updated
+				from user where nurseVaccinator="y" 
+		',
+		'suppress_rowcount'=>true
+	),
 	__LINE__ => array(
 		'name' => '',
 		'query' => "
