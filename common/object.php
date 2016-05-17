@@ -12,21 +12,8 @@ abstract class VWObject
 	static function getJoins() { return array(); }
 	static function getDefaultSort() { return 'name'; }  // set to something else if this table doesn't have the field called "name"
 	static function getFilterEnabled() { return false; } // override to return true for tables that have a field called enabled
-	static function getListFields() { return array('id_number'); }
-
-	public static function getClassFields() {
-		return array(
-			'company_id' => 'CRMCompany',
-			'jobID'		=> 'Job',
-			'program'	=> 'Program',
-			'program_db' => 'Program',
-			'program' => 'Program',
-			'primaryContact' => 'CRMContact',
-			'BillingContact' => 'CRMContact',
-			'opsManager' => 'User',
-			'operations' => 'User'
-		);	
-	}
+	static function getIdName() { return 'id_number'; }
+	static function getFilter() { return '1'; }
 
 	public $params=array();
 	public static $table_name='';
@@ -48,13 +35,13 @@ abstract class VWObject
 			if (!$table) $table = static::getTableName();
 
 			$q = "SELECT *
-			from $table ";
+			from `$table` ";
 			if ($id == 'max') {
 				$q .= "
-				where id_number=(SELECT max(id_number) from $table)";
+				where ". static::getIdName() ."=(SELECT max(". static::getIdName() .") from `$table`)";
 			} else {
 				$q .= "
-				where id_number=".intval($id);
+				where ". static::getIdName() ."=".intval($id);
 			}
 
 			$res = $dbr->query($q);
@@ -73,20 +60,7 @@ abstract class VWObject
 		} else {
 			$this->params['id_number'] = 0;
 		}
-
 	}
-
-	public function fillRelatedValue($idField, $class, $keyName) {
-		if (!isset($this->params[$idField])) { 
-			return;
-		}
-
-		$foreign = new $class($this->params[$idField]);
-		if ($foreign->id) {
-			$this->params[$keyName] = $foreign;
-		}
-	}
-
 
 	/**
 	 * GetAll Generic GetAll records
@@ -94,7 +68,7 @@ abstract class VWObject
 	 * @param string $sort          
 	 * @param array  $structure_keys array of fields, only up to 3 supported for the array. Return array indexed by this
 	 */
-	public static function GetAll($filter='', $sort='', $structure_keys = array(), $limit=0, $offset=0, $table='')
+	public static function GetAll($filter='1', $sort='', $structure_keys = array(), $limit=0, $offset=0, $table='')
 	{		
 		$dbr = Factory::get('dbread');				
 
@@ -103,10 +77,6 @@ abstract class VWObject
 
 		$q .= "from ". static::getTableName() . "\n";
 
-		foreach (static::getJoins() as $join) {
-			$q .= $join['sql'] . "\n";		
-		}
-
 		$q .= 'where 1 ';
 		if ($filter) { 
 			$q .= " AND $filter";
@@ -114,15 +84,16 @@ abstract class VWObject
 		if (static::getFilterEnabled()) {
 			$q .= ' AND enabled';
 		}
+		$q .= ' AND '. static::getFilter();
 
 		$q .= " order by ";
 		if ($sort) {
 			$q .= "$sort,";
 		}
 		if (static::getDefaultSort()) {
-			$q .= static::getTableName().".".static::getDefaultSort() .",";
+			$q .= static::getDefaultSort() .",";
 		}
-		$q .= static::getTableName().".id";
+		$q .= static::getIdName();
 
 		if ($limit) {
 			$q.= " limit  $limit ";
@@ -214,26 +185,13 @@ abstract class VWObject
 		$dbr = Factory::get('dbread');				
 		$q = "SELECT * \n";
 
-		foreach (static::getJoins() as $join) {  // see m.datatype for an example of joins
-			$table = $join['table'];
-			$tableAlias = isset($join['tableAlias']) ? $join['tableAlias'] : '';
-			foreach ($join['fields'] as $field) {
-				$q .= ", {$tableAlias}.$field as {$tableAlias}_$field";
-			}
-			$q .= "\n";
-		}
-
 		$q .= "from ". static::getTableName() . "\n";
 
-		foreach (static::getJoins() as $join) {
-			$q .= $join['sql'] . "\n";		
-		}
-
-		if ($filter) $q .= " where $filter";
+		$q .= " where $filter";
 		$q .= " order by ". 
 			($sort ? 
 			"$sort " : 
-			static::getTableName().".id_number")
+			static::getIdName())
 		;
 
 		$result = $dbr->query($q);
@@ -293,7 +251,7 @@ abstract class VWObject
 	public static function GetLastId() {
 		$dbr=Factory::Get('dbread');
 
-		$q = "SELECT max(id) from ". static::getTableName();
+		$q = "SELECT max(". static::getIdName() .") from ". static::getTableName();
 		$results = $dbr->query($q);
 
 		$row = $results->fetch();
@@ -309,21 +267,21 @@ abstract class VWObject
 	{
 		$dbr=Factory::Get('dbread');
 
-		$q = "SELECT id_number from ". $this->getTableName()." where $filter order by id_number";
+		$q = "SELECT ". static::getIdName() ." from ". $this->getTableName()." order by ".static::getIdName();
 		$results = $dbr->query($q);
 
 		$idFound = FALSE;
 		$lastValue = FALSE;
 		$nextValue = FALSE;
 
-		while ($row = $results->fetch()) {			
-			if (intval($row['id_number']) == $this->id_number) {
+		while ($row = $results->fetch()) {
+			if (intval($row[ static::getIdName() ]) == intval($this->{static::getIdName()})) {
 				if ($row = $results->fetch()) {
-					$nextValue = $row['id_number']; 
+					$nextValue = $row[ static::getIdName() ];
 					break;
 				}
 			} else {
-				$lastValue = $row['id_number'];
+				$lastValue = $row[ static::getIdName() ];
 			}
 		}
 		$this->params['next'] = $nextValue;
@@ -338,7 +296,7 @@ abstract class VWObject
 	 */
 	public static function InsertOrUpdate($filter, $fieldName, $value) {
 		$dbr = Factory::Get('dbread');
-		$dbw = Factory::Get('dbwrite');
+		//$dbw = Factory::Get('dbwrite');
 
 		$filterStr = '';
 		foreach ($filter as $filterFieldName => $filterValue) {			
@@ -346,21 +304,21 @@ abstract class VWObject
 			$filterStr .= "$filterFieldName = '$filterValue'";
 		}
 
-		$q = "SELECT id_number, $fieldName from ". static::getTableName() ." where $filterStr";
+		$q = "SELECT ". static::getIdName() .", $fieldName from ". static::getTableName() ." where $filterStr";
 
 		$res = $dbr->query($q);
 		$found =false;
 		if ($row = $res->fetch(2)) {			  // should we throw an error if more than one record?
 			$q = "UPDATE ". static::getTableName() ." set $fieldName=". $dbw->quote($value) ." where $filterStr";
-			$dbw->query($q);
-			return $row['id_number'];
+			$dbr->query($q);
+			return $row[ static::getIdName() ];
 
 		} else {
 			$q1 = "INSERT into ". static::getTableName() ." ($fieldName";
 			$q2 = ") values('$value'";
 			foreach ($filter as $filterFieldName => $filterValue) {			
 				$q1 .= ",$filterFieldName";
-				$q2 .= ','.$dbw->quote($filterValue);
+				$q2 .= ','.$dbr->quote($filterValue);
 			}
 			$q = "$q1  $q2)";
 			$dbw->query($q);
