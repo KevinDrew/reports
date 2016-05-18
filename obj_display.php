@@ -15,6 +15,18 @@ include("common/m.site.php");
 include("common/m.booking-vaccine-type.php");
 include("common/m.patient.php");
 
+$classFields = array(
+	'company_id' => 'CRMCompany',
+	'jobID'         => 'Job',
+	'program'       => 'Program',
+	'program_db' => 'Program',
+	'program' => 'Program',
+	'primaryContact' => 'CRMContact',
+	'BillingContact' => 'CRMContact',
+	'opsManager' => 'User',
+	'operations' => 'User'
+);
+
 ?>
 <html>
 	<body>
@@ -119,8 +131,22 @@ include("common/m.patient.php");
 			break;
 
 			case 'CRMCompany':
-				print '<span class="highlight">$crmCompany->getExtraData() </span>= ';
-				print replaceLinks(tablify($obj->getContacts()), $obj);
+				print '<span class="highlight">$crmCompany->getContacts() </span>= ';
+
+				$conArr=array();
+				foreach ($obj->getContacts() as $con) {
+					$conArr[] =  array(
+						'fname' => array('val' => $con->fname),
+						'sname' => array('val' => $con->sname),
+						'position' => array('val' => $con->position),
+						'department' => array('val' => $con->department),
+						'devision' => array('val' => $con->devision),
+						'email' => array('val' => $con->email),
+						'phone' => array('val' => $con->phone)
+					);
+				}
+				print tablify($conArr);
+				print backForwardLinks($obj, __LINE__);
 			break;
 
 			case 'CRMContact':
@@ -148,7 +174,9 @@ include("common/m.patient.php");
 	}
 
 	function replaceLinks($str, $obj) {
-		foreach ($obj::getClassFields() as $field=>$class) {
+		global $classFields;
+
+		foreach ($classFields as $field=>$class) {
 			$str = preg_replace("/(\[$field\] => (\d+))/", "<a href=?class=$class&id=$2>$1</a>", $str);
 		}
 		return $str;
