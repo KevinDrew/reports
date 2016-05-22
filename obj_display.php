@@ -1,6 +1,8 @@
 <?php 
 header( 'Content-type: text/html; charset=utf-8' );
-define("_BNEXEC",1);
+
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 include("common/object.php");
 include("common/factory.php");
@@ -14,6 +16,18 @@ include("common/m.crm-contact.php");
 include("common/m.site.php");
 include("common/m.booking-vaccine-type.php");
 include("common/m.patient.php");
+include("common/m.program-product.php");
+include("common/m.booking-system-notification.php");
+include("common/m.booking-system-email-templates.php");
+include("common/m.nurse.php");
+include("common/m.account.php");
+
+$url_extras = '';
+$db_params = array();
+if (isset($_GET['dbhost'])) {
+ 	$url_extras = 'dbhost='. $_GET['dbhost'];	
+	$db_params['host'] = $_GET['dbhost'];
+}
 
 $classFields = array(
 	'company_id' => 'CRMCompany',
@@ -35,32 +49,35 @@ $classFields = array(
 			.highlight { color:red; font-weight:bold;}
 		</style>
 
-<?php 
+		<a href='misc_queries.php?<?php echo $url_extras; ?>'>misc_queries</a><br>
+		<a href='?dbhost=localhost'>database localhost</a><br>
+		<a href='?dbhost=192.168.3.1'>database host 192.168.3.1</a><br>
+<?php 	
+
 	if (isset($_GET['class'])) {
-		$dbr = Factory::get('dbread');
+		$dbr = Factory::get('dbread', $db_params);
 		$dbr->query("SET NAMES utf8");	
 
 		$class = $_GET['class'];
 		$obj = new $class($_GET['id']);		
+		$objStr = replaceLinks(numberLines(print_r($obj,1)), $obj);
 
-		// if ($_GET['id'] == 'max') {
-		// 	$prev = $obj->id_number -1;
-		// 	$next = 1;
-		// } else {
-		// 	$prev = $_GET['id'] -1;
-		// 	$next = $_GET['id'] +1;
-		// }
+		print '<!-- abcdefghijklmnopqrstuv --><!-- abcdefghijklmnopqrstuv --><!-- abcdefghijklmnopqrstuv --><!-- abcdefghijklmnopqrstuv -->';
+		print '<!-- abcdefghijklmnopqrstuv --><!-- abcdefghijklmnopqrstuv --><!-- abcdefghijklmnopqrstuv --><!-- abcdefghijklmnopqrstuv -->';
+		print '<!-- abcdefghijklmnopqrstuv --><!-- abcdefghijklmnopqrstuv --><!-- abcdefghijklmnopqrstuv --><!-- abcdefghijklmnopqrstuv -->';
+
+		ob_flush();
+
 
 		$obj->setPrevNextIds();
+		print backForwardLinks($obj, '')."<br>";
 
-		print '
-			<a href="?">List</a>&nbsp;&nbsp;
-		';
+		print "<a href='?'>List</a>&nbsp;&nbsp;";
 
-		print backForwardLinks( $obj, __LINE__);
 		print '<pre>';
-		print replaceLinks(numberLines(print_r($obj,1)), $obj);
-
+		print $objStr;
+		print backForwardLinks($obj, __LINE__)."\n";
+	
 		switch($class) {
 			case 'User':
 			break;
@@ -105,7 +122,7 @@ $classFields = array(
 
 			case 'BookingsDataHA':
 				print '<span class="highlight">$booking->getReminders() </span>= ';
-				print replaceLinks(print_r($obj->getReminders(),1), $obj);
+				print replaceLinks(print_r($obj->getReminders(),1));
 			break;
 
 			case 'Program':
@@ -146,38 +163,75 @@ $classFields = array(
 					);
 				}
 				print tablify($conArr);
-				print backForwardLinks($obj, __LINE__);
 			break;
 
 			case 'CRMContact':
-				//print '<span class="highlight">$crmCompany->getExtraData() </span>= ';
-				//print replaceLinks(print_r($obj->getContacts(),1));
+				print '<span class="highlight">$crmContact->getCompanies() </span>= ';
+				print replaceLinks(print_r($obj->getCompanies(),1));
 			break;
 
 			case 'Site':
 				print '<span class="highlight">$site->getJobs() </span>= ';
-				print replaceLinks(replaceJobLinks(print_r($obj->getJobs(),1)),$obj);
+				//print replaceLinks(replaceJobLinks(print_r($obj->getJobs(),1)));
+
+				$arr=array();
+				foreach ($obj->getJobs() as $row) {
+					$arr[] =  array(
+						'id_number'			=> array('val' => $row->id_number, 		'link' => 'Job&id='.$row->id_number),
+						'startDateTime'		=> array('val' => $row->startDateTime, 	'obj' => 'Unixtime'), // special obj type to convert timestamp
+						'finishDateTime'	=> array('val' => $row->finishDateTime, 'obj' => 'Unixtime'),
+						'entered'			=> array('val' => $row->entered,		'obj' => 'Unixtime'),
+						'bookingType'		=> array('val' => $row->bookingType),  
+						'requiredVacc'		=> array('val' => $row->requiredVacc),
+						'jobStatus'			=> array('val' => $row->jobStatus)
+					);
+				}
+				print tablify($arr);
+
 			break;
 		}
+		print backForwardLinks($obj, __LINE__);
+
 
 	} else {
 		print '
-			<a href="?class='. ($class="User") .'&id=max">'. $class .'</a><br>
-			<a href="?class='. ($class="Job") .'&id=max">'. $class .'</a><br>
-			<a href="?class='. ($class="BookingsDataHA") .'&id=max">'. $class .'</a><br>
-			<a href="?class='. ($class="Program") .'&id=max">'. $class .'</a><br>
-			<a href="?class='. ($class="Transaction") .'&id=max">'. $class .'</a><br>
-			<a href="?class='. ($class="CRMCompany") .'&id=max">'. $class .'</a><br>
-			<a href="?class='. ($class="CRMContact") .'&id=max">'. $class .'</a><br>
-			<a href="?class='. ($class="Site") .'&id=max">'. $class .'</a><br>
+			<a href="?'. $url_extras .'&class='. ($class="User") .'&id=max">'. $class .'</a><br>
+			<a href="?'. $url_extras .'&class='. ($class="Job") .'&id=max">'. $class .'</a><br>
+			<a href="?'. $url_extras .'&class='. ($class="BookingsDataHA") .'&id=max">'. $class .'</a><br>
+			<a href="?'. $url_extras .'&class='. ($class="Program") .'&id=max">'. $class .'</a><br>
+			<a href="?'. $url_extras .'&class='. ($class="Transaction") .'&id=max">'. $class .'</a><br>
+			<a href="?'. $url_extras .'&class='. ($class="CRMCompany") .'&id=max">'. $class .'</a><br>
+			<a href="?'. $url_extras .'&class='. ($class="CRMContact") .'&id=max">'. $class .'</a><br>
+			<a href="?'. $url_extras .'&class='. ($class="Site") .'&id=max">'. $class .'</a><br>
+			<a href="?'. $url_extras .'&class='. ($class="ProgramProduct") .'&id=0001">'. $class .'</a><br>
+			<a href="?'. $url_extras .'&class='. ($class="BookingSystemNotification") .'&id=max">'. $class .'</a><br> 
+			<a href="?'. $url_extras .'&class='. ($class="BookingSystemEmailTemplates") .'&id=max">'. $class .'</a><br> 
+			<a href="?'. $url_extras .'&class='. ($class="Nurse") .'&id=max">'. $class .'</a><br> 
+			<a href="?'. $url_extras .'&class='. ($class="Account") .'&id=max">'. $class .'</a><br> 
+			<a href="?'. $url_extras .'&class='. ($class="Transaction") .'&id=max">'. $class .'</a><br> 
 		';
 	}
 
-	function replaceLinks($str, $obj) {
-		global $classFields;
+	function replaceLinks($str) {
+		$str = preg_replace('/(\[job_id\] => (\d*))/', '<a href=?class=Job&id=$2>$1</a>', $str);
+		$str = preg_replace('/(\[company_id\] => (\d*))/', '<a href=?class=CRMCompany&id=$2>$1</a>', $str);
+		$str = preg_replace('/(\[program_db\] => (\d*))/', '<a href=?class=Program&id=$2>$1</a>', $str);
+		$str = preg_replace('/(\[program\] => (\d*))/', '<a href=?class=Program&id=$2>$1</a>', $str);
+		$str = preg_replace('/(\[program_id\] => (\d*))/', '<a href=?class=Program&id=$2>$1</a>', $str);
+		$str = preg_replace('/(\[primaryContact\] => (\d*))/', '<a href=?class=CRMContact&id=$2>$1</a>', $str);
+		$str = preg_replace('/(\[BillingContact\] => (\d*))/', '<a href=?class=CRMContact&id=$2>$1</a>', $str);
+		$str = preg_replace('/(\[opsManager\] => (\d*))/', '<a href=?class=User&id=$2>$1</a>', $str);
+		$str = preg_replace('/(\[operations\] => (\d*))/', '<a href=?class=User&id=$2>$1</a>', $str);
+		$str = preg_replace('/(\[salesPerson\] => (\d*))/', '<a href=?class=User&id=$2>$1</a>', $str);
+		$str = preg_replace('/(\[sites_id\] => (\d*))/', '<a href=?class=Site&id=$2>$1</a>', $str);
+		$str = preg_replace('/(\[site_id\] => (\d*))/', '<a href=?class=Site&id=$2>$1</a>', $str);
+		$str = preg_replace('/(\[programType\] => (\d*))/', '<a href=?class=ProgramProduct&id=$2>$1</a>', $str);
 
-		foreach ($classFields as $field=>$class) {
-			$str = preg_replace("/(\[$field\] => (\d+))/", "<a href=?class=$class&id=$2>$1</a>", $str);
+		// show the human readable times after a unix timestamp
+		foreach (array('startDateTime', 'finishDateTime', 'entered', 'programEntered', 'timestamp', 'added', 'syncStamp','earlyDate','lateDate', 'time', 'deliveryStamp', 'insertStamp','sentTime') as $ts) {
+			if (preg_match("/(\[$ts\] => (\d{10}))/", $str, $matches)) {
+				$str = preg_replace("/(\[$ts\] => (\d{10}))/", $matches[1] .' &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- '. date('r', $matches[2]), $str);
+			}
 		}
 		return $str;
 	}
@@ -187,8 +241,18 @@ $classFields = array(
 		return $str;
 	}
 
+	function replaceBookingLinks($str) {
+		$str = preg_replace('/(\[id_number\] => (\d*))/', '<a href=?class=BookingsDataHA&id=$2>$1</a>', $str);
+		return $str;
+	}
+
 	function replaceJobLinks($str) {
-		$str = preg_replace('/(\[id_number\] => (\d+))/', '<a href=?class=Job&id=$2>$1</a>', $str);
+		$str = preg_replace('/(\[id_number\] => (\d*))/', '<a href=?class=Job&id=$2>$1</a>', $str);
+		return $str;
+	}
+
+	function replaceProgramLinks($str) {
+		$str = preg_replace('/(\[id_number\] => (\d*))/', '<a href=?class=Program&id=$2>$1</a>', $str);
 		return $str;
 	}
 
@@ -197,7 +261,9 @@ $classFields = array(
 		$res = '';
 		$i=0;
 		foreach (explode("\n", $str) as $line) {
-			if (preg_match('/\s{12}\[(.*)\]/', $line, $matches))  {
+			
+
+			if (substr($line,0,8) == '        ' && preg_match('/\[(.*)\]/', $line, $matches)) {
 				$res .= '<a href="index_field.php?table='. trim($obj->getTableName()) .'&field='.$matches[1] .'">i</a>';
 				$res .= str_pad($i,12,' ', STR_PAD_LEFT). ' ' .trim($line) . "\n";
 				$i++;
@@ -208,7 +274,7 @@ $classFields = array(
 		return $res;
 	}
             
-    function tablify($arr,$links) {
+    function tablify($arr) {
     	$html = "<table border=1>\n";
     	for($row=0; $row<count($arr); $row++) {
    			$html .= "	<tr>";
