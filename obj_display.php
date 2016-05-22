@@ -29,6 +29,18 @@ if (isset($_GET['dbhost'])) {
 	$db_params['host'] = $_GET['dbhost'];
 }
 
+$classFields = array(
+	'company_id' => 'CRMCompany',
+	'jobID'         => 'Job',
+	'program'       => 'Program',
+	'program_db' => 'Program',
+	'program' => 'Program',
+	'primaryContact' => 'CRMContact',
+	'BillingContact' => 'CRMContact',
+	'opsManager' => 'User',
+	'operations' => 'User'
+);
+
 ?>
 <html>
 	<body>
@@ -48,18 +60,24 @@ if (isset($_GET['dbhost'])) {
 
 		$class = $_GET['class'];
 		$obj = new $class($_GET['id']);		
+		$objStr = replaceLinks(numberLines(print_r($obj,1)), $obj);
 
-		print '
-			<a href="?'. $url_extras .'">List</a>&nbsp;&nbsp;
-			<a href="?class='. $_GET['class'] .'&id='.  $prev .'&'. $url_extras .'">&laquo; Prev</a>&nbsp;&nbsp;
-			<a href="?class='. $_GET['class'] .'&id='.  $next .'&'. $url_extras .'">Next &raquo;</a><br>
-			<pre>
-		';
+		print '<!-- abcdefghijklmnopqrstuv --><!-- abcdefghijklmnopqrstuv --><!-- abcdefghijklmnopqrstuv --><!-- abcdefghijklmnopqrstuv -->';
+		print '<!-- abcdefghijklmnopqrstuv --><!-- abcdefghijklmnopqrstuv --><!-- abcdefghijklmnopqrstuv --><!-- abcdefghijklmnopqrstuv -->';
+		print '<!-- abcdefghijklmnopqrstuv --><!-- abcdefghijklmnopqrstuv --><!-- abcdefghijklmnopqrstuv --><!-- abcdefghijklmnopqrstuv -->';
 
-		print backForwardLinks( $obj, __LINE__);
+		ob_flush();
+
+
+		$obj->setPrevNextIds();
+		print backForwardLinks($obj, '')."<br>";
+
+		print "<a href='?'>List</a>&nbsp;&nbsp;";
+
 		print '<pre>';
-		print replaceLinks(numberLines(print_r($obj,1)), $obj);
-
+		print $objStr;
+		print backForwardLinks($obj, __LINE__)."\n";
+	
 		switch($class) {
 			case 'User':
 			break;
@@ -130,20 +148,50 @@ if (isset($_GET['dbhost'])) {
 			break;
 
 			case 'CRMCompany':
-				print '<span class="highlight">$crmCompany->getExtraData() </span>= ';
-				print replaceLinks(tablify($obj->getContacts()), $obj);
+				print '<span class="highlight">$crmCompany->getContacts() </span>= ';
+
+				$conArr=array();
+				foreach ($obj->getContacts() as $con) {
+					$conArr[] =  array(
+						'fname' => array('val' => $con->fname),
+						'sname' => array('val' => $con->sname),
+						'position' => array('val' => $con->position),
+						'department' => array('val' => $con->department),
+						'devision' => array('val' => $con->devision),
+						'email' => array('val' => $con->email),
+						'phone' => array('val' => $con->phone)
+					);
+				}
+				print tablify($conArr);
 			break;
 
 			case 'CRMContact':
-				//print '<span class="highlight">$crmCompany->getExtraData() </span>= ';
-				//print replaceLinks(print_r($obj->getContacts(),1));
+				print '<span class="highlight">$crmContact->getCompanies() </span>= ';
+				print replaceLinks(print_r($obj->getCompanies(),1));
 			break;
 
 			case 'Site':
 				print '<span class="highlight">$site->getJobs() </span>= ';
-				print replaceLinks(replaceJobLinks(print_r($obj->getJobs(),1)));
+				//print replaceLinks(replaceJobLinks(print_r($obj->getJobs(),1)));
+
+				$arr=array();
+				foreach ($obj->getJobs() as $row) {
+					$arr[] =  array(
+						'id_number'			=> array('val' => $row->id_number, 		'link' => 'Job&id='.$row->id_number),
+						'startDateTime'		=> array('val' => $row->startDateTime, 	'obj' => 'Unixtime'), // special obj type to convert timestamp
+						'finishDateTime'	=> array('val' => $row->finishDateTime, 'obj' => 'Unixtime'),
+						'entered'			=> array('val' => $row->entered,		'obj' => 'Unixtime'),
+						'bookingType'		=> array('val' => $row->bookingType),  
+						'requiredVacc'		=> array('val' => $row->requiredVacc),
+						'jobStatus'			=> array('val' => $row->jobStatus)
+					);
+				}
+				print tablify($arr);
+
 			break;
 		}
+		print backForwardLinks($obj, __LINE__);
+
 
 	} else {
 		print '
@@ -213,7 +261,9 @@ if (isset($_GET['dbhost'])) {
 		$res = '';
 		$i=0;
 		foreach (explode("\n", $str) as $line) {
-			if (substr($line,0,4) == '    ' && preg_match('/\[(.*)\]/', $line, $matches)) {
+			
+
+			if (substr($line,0,8) == '        ' && preg_match('/\[(.*)\]/', $line, $matches)) {
 				$res .= '<a href="index_field.php?table='. trim($obj->getTableName()) .'&field='.$matches[1] .'">i</a>';
 				$res .= str_pad($i,12,' ', STR_PAD_LEFT). ' ' .trim($line) . "\n";
 				$i++;
@@ -224,7 +274,7 @@ if (isset($_GET['dbhost'])) {
 		return $res;
 	}
             
-    function tablify($arr,$links) {
+    function tablify($arr) {
     	$html = "<table border=1>\n";
     	for($row=0; $row<count($arr); $row++) {
    			$html .= "	<tr>";

@@ -8,6 +8,6 @@ class Site extends VWObject {
 	}
 
 	function getJobs() {
-		return Job::GetAllAsObject( $filter = "site_id = ". $this->id_number);
+		return Job::GetAllAsObjects( $filter = "site_id = ". $this->id_number);
 	}
 }

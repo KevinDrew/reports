@@ -266,26 +266,28 @@ abstract class VWObject
 	public function setPrevNextIds($sortField='name', $filter='1')
 	{
 		$dbr=Factory::Get('dbread');
+		$table = $this->getTableName();
+		$id_name = static::getIdName();
+		$id = $this->$id_name;
 
-		$q = "SELECT ". static::getIdName() ." from ". $this->getTableName()." order by ".static::getIdName();
-		$results = $dbr->query($q);
+		$q = "SELECT max($id_name) as prev
+			from $table
+			where $id_name < $id 
+			order by $id_name";
 
-		$idFound = FALSE;
-		$lastValue = FALSE;
-		$nextValue = FALSE;
+		$res = $dbr->query($q);
+		$row = $res->fetch(2);
+		$this->params['prev'] = $row['prev'];
 
-		while ($row = $results->fetch()) {
-			if (intval($row[ static::getIdName() ]) == intval($this->{static::getIdName()})) {
-				if ($row = $results->fetch()) {
-					$nextValue = $row[ static::getIdName() ];
-					break;
-				}
-			} else {
-				$lastValue = $row[ static::getIdName() ];
-			}
-		}
-		$this->params['next'] = $nextValue;
-		$this->params['prev'] = $lastValue;
+		$q = "SELECT min($id_name) as next
+			from $table
+			where $id_name > $id 
+			order by $id_name";
+
+		$res = $dbr->query($q);
+		$row = $res->fetch(2);
+
+		$this->params['next'] = $row['next'];
 	}
 
 	/**
