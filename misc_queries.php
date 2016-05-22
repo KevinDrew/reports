@@ -1,8 +1,10 @@
 <?php 
 header( 'Content-type: text/html; charset=utf-8' );
-define("_BNEXEC",1);
 
 $csv = !empty($_REQUEST['csv']);
+
+//if (substr($_SERVER['REMOTE_ADDR'], 0, 6) != '192.168.' && $_SERVER['REMOTE_ADDR'] != '127.0.0.1')  exit;
+
 
 hprint ("<a href='obj_display.php'>obj_display</a><br>");
 hprint ("<a href='?dbhost=localhost'>localhost</a><br>");
@@ -437,10 +439,19 @@ $queries = array(
 			'SELECT 
 				name, 
 				surname, 
+				gt.Company_Name,
+				gt.Account_number,
+				gt.address,
+				gt.city,
+				gt.Postcode,
+				gt.State,
 				(select quantity from nurse_inventory where user.id_number=user_id and vaccineType="QIV") as Quadravalent,
 				(select quantity from nurse_inventory where user.id_number=user_id and vaccineType="TIV") as Trivalent,
 				(select updated from nurse_inventory where user.id_number=user_id and vaccineType="QIV") as updated
-				from user where nurseVaccinator="y" 
+				from user 
+				left join general_table gt on gt.Account_number=user.general_table
+				where nurseVaccinator="y" 
+				order by gt.Company_Name,gt.Postcode
 		',
 		'suppress_rowcount'=>true
 	),
