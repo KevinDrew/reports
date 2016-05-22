@@ -73,6 +73,30 @@ $queries = array(
 		',
 	),
 	__LINE__ => array( 
+		'name' => 'Jobs -confirmed and their companies by state',
+		'query' =>	
+			"SELECT j.id_number as job_number, from_unixtime(startDateTime), p.year, p.id_number as program_id, p.programStatus, c.id_number, c.company_name, s.state, j.requiredVacc
+				from jobs_db j
+				left join program_db p on j.program=p.id_number
+				left join crm_company c on p.company_id=c.id_number
+				left join sites_db s on j.site_id=s.id_number
+			where year=2016 and j.bookingType='confirmed' and startDateTime > 1463702400 and s.state != 'NSW'
+			order by s.state, c.company_name, p.programStatus, p.agent
+		",
+	),
+	__LINE__ => array( 
+		'name' => 'Jobs -confirmed and their companies by state - May-17',
+		'query' =>	
+			"SELECT j.id_number as job_number, j.bookingType, from_unixtime(startDateTime), p.year, p.id_number as program_id, p.programStatus, c.id_number, c.company_name, s.state, j.requiredVacc, p.vaxType
+				from jobs_db j
+				left join program_db p on j.program=p.id_number
+				left join crm_company c on p.company_id=c.id_number
+				left join sites_db s on j.site_id=s.id_number
+			where year=2016 and (j.bookingType='confirmed' or j.bookingType='complete') and startDateTime > 1463414400 and (p.vaxType='Quadrivalent' or p.vaxType='both')
+			order by s.state, c.company_name, p.programStatus, p.agent
+		",
+	),
+	__LINE__ => array( 
 		'name' => 'CAP Users',
 		'query' =>	
 			'SELECT j.id_number, p.year, p.id_number,c.id_number, c.company_name
@@ -146,6 +170,26 @@ $queries = array(
 				where b.job_id = '. ($job_id = param('job_id', $default='20642')) .'
 				and b.status!="deleted"
 				order by if(b.status="confirmed",1,0) desc,consent,attended, `time`',
+		'params' => array(
+			'job_id' => $job_id
+		)
+	),
+
+	__LINE__ => array( 
+		'name' => 'Bookings for a job - sort by name',  
+		'query' =>	
+			'SELECT DATE_FORMAT(FROM_UNIXTIME(j.startDateTime), "%l:%i:%s%p") as j__startTime, b.id_number,b.status as b__status,bt.vaxCat, p.fname, p.sname, j.jobstatus as job__jobstatus,consent,attended,patientData,
+				DATE_FORMAT(FROM_UNIXTIME(b.time), "%l:%i:%s%p") as bookedTime,
+				mod(b.time-j.startDateTime, 115) as btime_mod,
+				b.bookingType, time,
+				product,b.general_table,b.program,consentCard,medicareCharge,SMSReminder,emailReminders,SMS,b.email,iCal,iCalType,b.signature,b.`key`,reportComplete,sites_id,dateType,facilitator,progress,billable,cost,availability,och_bookingsData,facilitatorType,timeEnd,status,added,emailReminderSent,SMSReminderSent,postVaxSent,syncStamp,b.bookingType,b.vaccineType as b_vaccineType,j.vaccineType as j_vaccineType, note 
+				from bookingsDataHA b
+				left join jobs_db j on b.job_id=j.id_number
+				left join patientDataHA p on b.patientData=p.id_number
+				left join booking_typeVaccine bt on b.vaccineType=bt.id_number
+				where b.job_id = '. ($job_id = param('job_id', $default='20642')) .'
+				and b.status!="deleted"
+				order by p.fname, p.sname,if(b.status="confirmed",1,0) desc,consent,attended, `time`',
 		'params' => array(
 			'job_id' => $job_id
 		)
@@ -456,8 +500,15 @@ $queries = array(
 		'suppress_rowcount'=>true
 	),
 	__LINE__ => array(
-		'name' => '',
-		'query' => "
+		'name' => 'duplicate bookings',
+		'query' => "SELECT 
+				b.job_id, p.fname, p.sname, count(*)
+				from bookingsDataHA b 
+				join jobs_db j on j.id_number=b.job_id
+				left join patientDataHA p on b.patientData=p.id_number
+				where patientData != 6
+				and status!='deleted'
+				group by b.job_id, p.fname, p.sname having count(*) >1
 		"
 	),
 );
