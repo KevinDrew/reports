@@ -75,6 +75,7 @@ $classFields = array(
 		print "<a href='?'>List</a>&nbsp;&nbsp;";
 
 		print '<pre>';
+		print '$obj::getTableName() = '. $obj::getTableName() .'<br>';
 		print $objStr;
 		print backForwardLinks($obj, __LINE__)."\n";
 	
@@ -190,8 +191,6 @@ $classFields = array(
 
 			break;
 		}
-		print backForwardLinks($obj, __LINE__);
-
 
 	} else {
 		print '
@@ -313,12 +312,16 @@ $classFields = array(
 
 	function backForwardLinks($obj, $line) {
 		global $dbhost;
-		$html = '<a name="'.$line.'""></a>';
+		$html = '<a name="'.$line.'"></a>'."\n";
 		if ($obj->prev) {
 			$html .= '<a href="?dbhost='. $dbhost.'&class='. $_GET['class'] .'&id='.  $obj->prev .'#'. $line .'">&laquo; Prev</a>&nbsp;&nbsp;';
+		} else {
+			$html .= '&laquo; Prev';
 		}
 		if ($obj->next) {
 			$html .= '<a href="?dbhost='. $dbhost.'&class='. $_GET['class'] .'&id='.  $obj->next .'#'. $line .'">Next &raquo;</a>';
+		} else {
+			$html .= 'Next &raquo;';
 		}
 		return $html;
 	}
