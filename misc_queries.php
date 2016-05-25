@@ -85,16 +85,19 @@ $queries = array(
 		",
 	),
 	__LINE__ => array( 
-		'name' => 'Jobs -confirmed and their companies by state - May-17',
+		'name' => 'Jobs -confirmed and their companies by state - daterange',
 		'query' =>	
 			"SELECT j.id_number as job_number, j.bookingType, from_unixtime(startDateTime), p.year, p.id_number as program_id, p.programStatus, c.id_number, c.company_name, s.state, j.requiredVacc, p.vaxType
 				from jobs_db j
 				left join program_db p on j.program=p.id_number
 				left join crm_company c on p.company_id=c.id_number
 				left join sites_db s on j.site_id=s.id_number
-			where year=2016 and (j.bookingType='confirmed' or j.bookingType='complete') and startDateTime > 1463414400 and (p.vaxType='Quadrivalent' or p.vaxType='both')
-			order by s.state, c.company_name, p.programStatus, p.agent
+			where year=2016 and (j.bookingType='confirmed' or j.bookingType='complete') and startDateTime > unix_timestamp('". param('dateStart', $default='2016-05-23') ."')
+			order by p.vaxType, s.state, c.company_name, p.programStatus, p.agent
 		",
+		'params' => array(
+			'dateStart' => $default
+		)
 	),
 	__LINE__ => array( 
 		'name' => 'CAP Users',
@@ -167,7 +170,7 @@ $queries = array(
 				left join jobs_db j on b.job_id=j.id_number
 				left join patientDataHA p on b.patientData=p.id_number
 				left join booking_typeVaccine bt on b.vaccineType=bt.id_number
-				where b.job_id = '. ($job_id = param('job_id', $default='20642')) .'
+				where b.job_id = '. ($job_id = param('job_id', $default='20642')) .' 
 				and b.status!="deleted"
 				order by if(b.status="confirmed",1,0) desc,consent,attended, `time`',
 		'params' => array(
@@ -495,9 +498,8 @@ $queries = array(
 				from user 
 				left join general_table gt on gt.Account_number=user.general_table
 				where nurseVaccinator="y" 
-				order by gt.Company_Name,gt.Postcode
-		',
-		'suppress_rowcount'=>true
+				order by (select updated from nurse_inventory where user.id_number=user_id and vaccineType="QIV") desc, gt.Company_Name,gt.Postcode
+		'
 	),
 	__LINE__ => array(
 		'name' => 'duplicate bookings',
