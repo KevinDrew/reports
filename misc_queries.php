@@ -63,13 +63,24 @@ $queries = array(
 	__LINE__ => array( 
 		'name' => 'Jobs and their companies',
 		'query' =>	
-			'SELECT j.id_number as job_number, bookingType, from_unixtime(startDateTime), p.year, p.id_number as program_id, p.programStatus, p.agent, c.id_number, c.company_name, t.id_number as trans
+			'SELECT j.id_number as job_number, jobStatus, bookingType, from_unixtime(startDateTime), p.year, p.id_number as program_id, p.programStatus, p.agent, c.id_number, c.company_name, t.id_number as trans
 				from jobs_db j
 				left join program_db p on j.program=p.id_number
 				left join crm_company c on p.company_id=c.id_number
 				left join transactions_db t on t.job=j.id_number
 			where year=2016
 			order by bookingType, p.programStatus, p.agent
+		',
+	),
+	__LINE__ => array( 
+		'name' => 'Jobs and their companies -no trans',
+		'query' =>	
+			'SELECT j.id_number as job_number, jobStatus, bookingType, from_unixtime(startDateTime), p.year, p.id_number as program_id, p.programStatus, p.agent, c.id_number, c.company_name
+				from jobs_db j
+				left join program_db p on j.program=p.id_number
+				left join crm_company c on p.company_id=c.id_number
+			where year=2016
+			order by  c.company_name
 		',
 	),
 	__LINE__ => array( 
@@ -497,7 +508,7 @@ $queries = array(
 				(select updated from nurse_inventory where user.id_number=user_id and vaccineType="QIV") as updated
 				from user 
 				left join general_table gt on gt.Account_number=user.general_table
-				where nurseVaccinator="y" 
+				where nurseVaccinator="y" and `2016RegComplete`="Yes"
 				order by (select updated from nurse_inventory where user.id_number=user_id and vaccineType="QIV") desc, gt.Company_Name,gt.Postcode
 		'
 	),
