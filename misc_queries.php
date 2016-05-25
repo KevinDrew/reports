@@ -61,7 +61,7 @@ $queries = array(
 		',
 	),
 	__LINE__ => array( 
-		'name' => 'Jobs and their companies',
+		'name' => 'Jobs and their companies - with trans id',
 		'query' =>	
 			'SELECT j.id_number as job_number, jobStatus, bookingType, from_unixtime(startDateTime), p.year, p.id_number as program_id, p.programStatus, p.agent, c.id_number, c.company_name, t.id_number as trans
 				from jobs_db j
@@ -73,13 +73,13 @@ $queries = array(
 		',
 	),
 	__LINE__ => array( 
-		'name' => 'Jobs and their companies -no trans',
+		'name' => 'Jobs and their companies',
 		'query' =>	
 			'SELECT j.id_number as job_number, jobStatus, bookingType, from_unixtime(startDateTime), p.year, p.id_number as program_id, p.programStatus, p.agent, c.id_number, c.company_name
 				from jobs_db j
 				left join program_db p on j.program=p.id_number
 				left join crm_company c on p.company_id=c.id_number
-			where year=2016
+			where year=2016 and bookingType != "delete"
 			order by  c.company_name
 		',
 	),
