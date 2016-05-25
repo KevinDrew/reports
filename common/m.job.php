@@ -34,7 +34,7 @@ class Job extends VWObject {
 	}
 
 	function getProgram() {
-		$programArr = Program::GetAllAsObjects($filter='job_id='. intval($this->id_number));
+		$programArr = Program::GetAllAsObjects($filter='job='. intval($this->id_number));
 		return $programArr[0];
 	}
 }

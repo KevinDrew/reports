@@ -24,4 +24,8 @@ class CRMCompany extends VWObject {
 		}
 		return $rows;
 	}
+
+	function getPrograms() {
+		return Program::GetAllAsObjects($filter = 'company_id = '. intval($this->id_number));
+	}
 }

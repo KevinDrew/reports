@@ -75,7 +75,7 @@ $classFields = array(
 		print "<a href='?'>List</a>&nbsp;&nbsp;";
 
 		print '<pre>';
-		print '$obj::getTableName() = '. $obj::getTableName() .'<br>';
+		print '$obj::getTableName() = <span class="highlight">'. $obj::getTableName() .'</span><br>';
 		print $objStr;
 		print backForwardLinks($obj, __LINE__)."\n";
 	
@@ -154,6 +154,7 @@ $classFields = array(
 				$conArr=array();
 				foreach ($obj->getContacts() as $con) {
 					$conArr[] =  array(
+
 						'fname' => array('val' => $con->fname),
 						'sname' => array('val' => $con->sname),
 						'position' => array('val' => $con->position),
@@ -164,7 +165,19 @@ $classFields = array(
 					);
 				}
 				print tablify($conArr);
-			break;
+
+				print '<br><span class="highlight">$crmCompany->getPrograms() </span>= ';
+				$arr=array();
+				foreach ($obj->getPrograms() as $row) {
+					$arr[] =  array(
+						'id_number' => array('val' => $row->id_number, 'link'=>'Program&id='. $row->id_number),
+						'programName' 		=> array('val' => $row->programName),
+					);
+				}
+				print tablify($arr);
+
+
+			break;			
 
 			case 'CRMContact':
 				print '<span class="highlight">$crmContact->getCompanies() </span>= ';
