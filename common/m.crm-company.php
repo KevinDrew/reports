@@ -9,7 +9,7 @@ class CRMCompany extends VWObject {
 
 	function getContacts($sort='con.sname,con.fname') {
 		$q = "SELECT con.id_number
-			FROM crm_contactslink l
+			FROM crm_contactsLink l
 			left join crm_contact con on con.id_number=l.contact_ID
 			WHERE company_id=". $this->id_number ."
 			order by $sort

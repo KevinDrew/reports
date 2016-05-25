@@ -154,14 +154,14 @@ $classFields = array(
 				$conArr=array();
 				foreach ($obj->getContacts() as $con) {
 					$conArr[] =  array(
-
-						'fname' => array('val' => $con->fname),
-						'sname' => array('val' => $con->sname),
-						'position' => array('val' => $con->position),
-						'department' => array('val' => $con->department),
-						'devision' => array('val' => $con->devision),
-						'email' => array('val' => $con->email),
-						'phone' => array('val' => $con->phone)
+						'id_number' => array('val' => $con->id_number, 'link' => 'CRMContact&id='. $con->id_number),
+						'fname' 	=> array('val' => $con->fname),
+						'sname' 	=> array('val' => $con->sname),
+						'position' 	=> array('val' => $con->position),
+						'department'=> array('val' => $con->department),
+						'devision' 	=> array('val' => $con->devision),
+						'email' 	=> array('val' => $con->email),
+						'phone' 	=> array('val' => $con->phone)
 					);
 				}
 				print tablify($conArr);
@@ -170,8 +170,9 @@ $classFields = array(
 				$arr=array();
 				foreach ($obj->getPrograms() as $row) {
 					$arr[] =  array(
-						'id_number' => array('val' => $row->id_number, 'link'=>'Program&id='. $row->id_number),
-						'programName' 		=> array('val' => $row->programName),
+						'id_number'   => array('val' => $row->id_number, 'link'=>'Program&id='. $row->id_number),
+						'programName' => array('val' => $row->programName),
+						'year' 		  => array('val' => $row->year)	
 					);
 				}
 				print tablify($arr);
@@ -181,7 +182,7 @@ $classFields = array(
 
 			case 'CRMContact':
 				print '<span class="highlight">$crmContact->getCompanies() </span>= ';
-				print replaceLinks(print_r($obj->getCompanies(),1));
+				print replaceIdLinks(replaceLinks(print_r($obj->getCompanies(),1)), 'CRMCompany');
 			break;
 
 			case 'Site':
